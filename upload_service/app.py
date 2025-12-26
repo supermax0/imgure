@@ -1,12 +1,14 @@
 from flask import Flask, request, jsonify, send_file
-from werkzeug.middleware.proxy_fix import ProxyFix
-
 from flask_cors import CORS
 from PIL import Image
+from werkzeug.middleware.proxy_fix import ProxyFix
 import os, uuid, zipfile, json
 
 app = Flask(__name__)
 CORS(app)
+
+# 🔥 مهم جدًا
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 API_TOKEN = "SUPER_SECRET_TOKEN"
 
@@ -22,9 +24,9 @@ def auth(req):
     return req.headers.get("Authorization") == f"Bearer {API_TOKEN}"
 
 def base_url():
-    return request.host_url.rstrip("/")
-
-# ===================== UPLOAD =====================
+    proto = request.headers.get("X-Forwarded-Proto", request.scheme)
+    host = request.headers.get("Host")
+    return f"{proto}://{host}"
 
 @app.route("/upload", methods=["POST"])
 def upload():
@@ -32,10 +34,7 @@ def upload():
         return jsonify({"error": "Unauthorized"}), 401
 
     files = request.files.getlist("images")
-    visibility = request.form.get("visibility", "private")
-
-    if not files:
-        return jsonify({"error": "No images"}), 400
+    visibility = request.form.get("visibility", "public")
 
     album_id = str(uuid.uuid4())
     album_path = os.path.join(IMG_DIR, album_id)
@@ -56,10 +55,7 @@ def upload():
 
         urls.append(f"{base_url()}/image/{album_id}/{name}")
 
-    meta = {
-        "visibility": visibility,
-        "images": urls
-    }
+    meta = {"visibility": visibility, "images": urls}
 
     with open(os.path.join(album_path, "meta.json"), "w") as m:
         json.dump(meta, m)
@@ -68,56 +64,35 @@ def upload():
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
         for img_name in os.listdir(album_path):
             if img_name.endswith(".webp"):
-                z.write(
-                    os.path.join(album_path, img_name),
-                    img_name
-                )
+                z.write(os.path.join(album_path, img_name), img_name)
 
     return jsonify({
-        "album_id": album_id,
         "images": urls,
         "album_url": f"{base_url()}/album/{album_id}",
         "zip_url": f"{base_url()}/archive/{album_id}"
     })
 
-# ===================== IMAGE =====================
-
 @app.route("/image/<album>/<name>")
 def image(album, name):
-    path = os.path.join(IMG_DIR, album, name)
-    if not os.path.exists(path):
-        return jsonify({"error": "Not found"}), 404
+    return send_file(os.path.join(IMG_DIR, album, name), mimetype="image/webp")
 
-    return send_file(path, mimetype="image/webp")
-
-# ===================== ALBUM =====================
+@app.route("/archive/<album>")
+def archive(album):
+    return send_file(os.path.join(ZIP_DIR, f"{album}.zip"), as_attachment=True)
 
 @app.route("/album/<album>")
 def album(album):
     meta_path = os.path.join(IMG_DIR, album, "meta.json")
     if not os.path.exists(meta_path):
-        return jsonify({"error": "Not found"}), 404
+        return jsonify({"error": "not found"}), 404
 
     with open(meta_path) as f:
         meta = json.load(f)
 
     if meta["visibility"] == "private":
-        return jsonify({"error": "Private album"}), 403
+        return jsonify({"error": "private"}), 403
 
     return jsonify(meta)
 
-# ===================== ZIP =====================
-
-@app.route("/archive/<album>")
-def archive(album):
-    zip_path = os.path.join(ZIP_DIR, f"{album}.zip")
-    if not os.path.exists(zip_path):
-        return jsonify({"error": "Not found"}), 404
-
-    return send_file(zip_path, as_attachment=True)
-
-# ===================== RUN =====================
-
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
-
+    app.run()
