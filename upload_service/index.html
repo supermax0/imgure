@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>مدير الصور</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="panel">
+  <h2>رفع صور المنتج</h2>
+
+  <input type="file" id="files" multiple>
+  <select id="visibility">
+    <option value="private">خاص</option>
+    <option value="public">عام</option>
+  </select>
+
+  <button onclick="upload()">رفع</button>
+
+  <div id="progress">
+    <div id="bar"></div>
+  </div>
+
+  <div id="gallery"></div>
+  <div id="links"></div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

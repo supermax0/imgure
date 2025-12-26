@@ -1,0 +1,55 @@
+body {
+  background: #020617;
+  font-family: sans-serif;
+  color: white;
+  display: flex;
+  justify-content: center;
+  padding: 40px;
+}
+
+.panel {
+  background: #0f172a;
+  padding: 25px;
+  border-radius: 14px;
+  width: 520px;
+}
+
+button, select {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+}
+
+button {
+  background: #22c55e;
+  cursor: pointer;
+}
+
+#gallery {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+#gallery img {
+  width: 100px;
+  border-radius: 6px;
+}
+
+#progress {
+  width: 100%;
+  background: #1e293b;
+  height: 6px;
+  border-radius: 6px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+#bar {
+  width: 0%;
+  height: 100%;
+  background: #22c55e;
+}
