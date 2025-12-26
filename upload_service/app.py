@@ -1,4 +1,6 @@
 from flask import Flask, request, jsonify, send_file
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 from flask_cors import CORS
 from PIL import Image
 import os, uuid, zipfile, json
@@ -118,3 +120,4 @@ def archive(album):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
+
